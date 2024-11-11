@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Renderer</title>
+    
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <style>
+        body, div { margin: 0; padding: 0; }
+        .renderer { border: dashed #000000; }
+    </style>
+
+</head>
+
+<body data-new-gr-c-s-check-loaded="14.1087.0" data-gr-ext-installed="">
+
+
+<script type="module">
+
+import * as THREE from 'https://cdn.skypack.dev/three@0.132.0';
+import { PLYLoader } from 'https://cdn.skypack.dev/three@0.132.0/examples/jsm/loaders/PLYLoader.js';
+import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.132.0/examples/jsm/loaders/GLTFLoader.js';
+import { FBXLoader } from 'https://cdn.skypack.dev/three@0.132.0/examples/jsm/loaders/FBXLoader.js';
+import { OBJLoader } from 'https://cdn.skypack.dev/three@0.132.0/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.0/examples/jsm/controls/OrbitControls.js';
+
+class Viewer {
+
+  constructor() {
+    
+    var url_params = new URLSearchParams(new URL(window.location.href).searchParams);
+ 
+    // config
+    this.params = {
+      filePath: url_params.get('file'), // must provide
+      backgroundColor: '#ffffff',
+      lightIntensity: 1.0,
+      cameraFovy: 45,
+      cameraNear: 0.01,
+      cameraFar: 1000,
+      doubleSide: false,
+      renderMode: 'color',
+      playAnimation: false,
+      showMesh: true,
+      meshColor: '#ffffff',
+      showWireframe: (url_params.get('wire') === 'true') || false,
+      wireframeColor: '#000000', // not supported in most browsers
+      wireframeWidth: 1, // not supported in most browsers
+      showPoints: (url_params.get('point') === 'true') || false,
+      pointColor: '#95acd8',
+      pointSize: 1,
+    }
+    
+    // init renderer
+    this.renderer = new THREE.WebGLRenderer({
+      powerPreference: 'high-performance', 
+      precision: 'mediump', 
+      alpha: false, 
+      antialias: true,
+    }); // antialias can be disabled to improve performance
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.autoClear = false;
+
+    this.scene = new THREE.Scene();
+    this.clock = new THREE.Clock();
+    this.mixer = null;
+    this.group = null;
+    this.meshObject = new THREE.Group();
+    this.wireObject = null;
+    this.pointObject = new THREE.Group();
+    this.scene.background = new THREE.Color(this.params.backgroundColor);
+
+    // light
+    this.light = new THREE.HemisphereLight(0xcccccc, 0x333333, this.params.lightIntensity);
+    this.scene.add(this.light);
+
+    // load mesh and all other stuff after loading
+    const fileExt = this.params.filePath.split('.').pop().toLowerCase();
+    let loader;
+    if (fileExt === 'glb' || fileExt === 'gltf') {
+      loader = new GLTFLoader();
+    } else if (fileExt === 'fbx') {
+      loader = new FBXLoader();
+    } else if (fileExt === 'obj') {
+      loader = new OBJLoader();
+    } else if (fileExt === 'ply') {
+      loader = new PLYLoader();
+    }
+
+    loader.load(this.params.filePath, function (object) {
+
+      if (fileExt === 'glb' || fileExt === 'gltf') {        
+        this.group = object.scene; // Group
+        if (object.animations.length > 0) {
+          this.mixer = new THREE.AnimationMixer(this.group);
+          this.mixer.clipAction(object.animations[0]).play();
+        }
+      } else if (fileExt === 'fbx') {
+        this.group = object; // Group
+        if (object.animations.length > 0) {
+          this.mixer = new THREE.AnimationMixer(this.group);
+          this.mixer.clipAction(object.animations[0]).play();
+        }
+      } else if (fileExt === 'obj') {
+        this.group = object; // Group
+      } else if (fileExt === 'ply') {
+        object.computeVertexNormals();
+        var material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(this.params.meshColor), // default grey
+          roughness: 0.1,
+          flatShading: true,
+          side: this.params.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+        });
+        this.group = new THREE.Mesh(object, material);
+      }
+
+      // traverse and update mesh and points
+      this.group.traverse(function (child) {
+        if (child instanceof THREE.Mesh) {
+          if (this.params.renderMode === 'color') {
+            child.material.side = this.params.doubleSide ? THREE.DoubleSide : THREE.FrontSide;
+            child.material.color = new THREE.Color(this.params.meshColor);
+          } else if (this.params.renderMode === 'normal') {
+            child.material = new THREE.MeshNormalMaterial({
+              side: this.params.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+            });
+          } else if (this.params.renderMode === 'depth') {
+            child.material = new THREE.MeshDepthMaterial({
+              side: this.params.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+            });
+          }
+          this.meshObject.add(child);
+          // also copy mesh as points
+          var points = new THREE.Points(child.geometry, new THREE.PointsMaterial({
+            color: new THREE.Color(this.params.pointColor),
+            size: this.params.pointSize,
+          }));
+          this.pointObject.add(points);
+        } else if (child instanceof THREE.Points) {
+          child.material.color = new THREE.Color(this.params.pointColor);
+          child.material.size = this.params.pointSize;
+          this.pointObject.add(child);
+        }
+      }.bind(this));
+
+      this.meshObject.visible = this.params.showMesh;
+      this.scene.add(this.meshObject);
+
+      this.pointObject.visible = this.params.showPoints;
+      this.scene.add(this.pointObject);
+
+      // copy meshObject as wireframes
+      this.wireObject = this.meshObject.clone();
+      this.wireObject.traverse(function (child) {
+        if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: this.params.wireframeColor,
+            roughness: 0.1,
+            flatShading: true,
+            side: THREE.DoubleSide, // wireframe is always double sided
+            wireframe: true,
+            wireframeLinewidth: this.params.wireframeWidth,
+          });
+        }
+      }.bind(this));
+      this.wireObject.visible = this.params.showWireframe;
+      this.scene.add(this.wireObject);
+
+      // init geometry related params
+      this.bbox = new THREE.Box3().setFromObject(this.scene);
+      this.center = this.bbox.getCenter(new THREE.Vector3());
+      
+      var cx = (this.bbox.max.x - this.bbox.min.x);
+      var cy = (this.bbox.max.y - this.bbox.min.y);
+      var cz = (this.bbox.max.z - this.bbox.min.z);
+      this.extent = Math.max(cx, Math.max(cy, cz));
+      this.params.gridUnit = Math.pow(10, Math.floor(Math.log10(this.extent)));
+      
+      // init camera
+      if (this.params.cameraNear < 0) {
+        this.params.cameraNear = this.extent; // auto calculate suitable near
+      }
+      this.camera = new THREE.PerspectiveCamera(this.params.cameraFovy, window.innerWidth / window.innerHeight, this.params.cameraNear, this.params.cameraFar);
+      var cameraPos = new THREE.Vector3(
+        this.extent + this.center.x, 
+        this.extent + this.center.y, 
+        this.extent + this.center.z
+      );
+      this.camera.position.copy(cameraPos);
+      this.camera.up.set(0, 1, 0);
+      this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.controls.target.copy(this.center);
+      this.controls.enableDamping = true;
+
+      // bind to DOM
+      document.body.appendChild(this.renderer.domElement);
+      window.addEventListener('resize', this.onWindowResize.bind(this), false);
+
+      // start animation
+      this.animate();
+
+    }.bind(this));
+    
+  }
+
+  animate() {
+    requestAnimationFrame(this.animate.bind(this));
+    this.controls.update();
+    if (this.mixer && this.params.playAnimation) {
+      this.mixer.update(this.clock.getDelta());
+    }
+    this.renderer.clear();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  onWindowResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name == 'src') {
+      // load mesh
+    } else {
+      // update params
+      this.params[name] = newValue;
+    }
+  }
+}
+
+var viewer = new Viewer();
+
+</script>
+<canvas width="382" height="382" style="display: block; width: 191px; height: 191px; touch-action: none;"></canvas></body><grammarly-desktop-integration data-grammarly-shadow-root="true"><template shadowrootmode="open"><style>
+      div.grammarly-desktop-integration {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select:none;
+        user-select:none;
+      }
+
+      div.grammarly-desktop-integration:before {
+        content: attr(data-content);
+      }
+    </style><div aria-label="grammarly-integration" role="group" tabindex="-1" class="grammarly-desktop-integration" data-content="{&quot;mode&quot;:&quot;full&quot;,&quot;isActive&quot;:true,&quot;isUserDisabled&quot;:false}"></div></template></grammarly-desktop-integration></html>
