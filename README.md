@@ -1,6 +1,6 @@
 # Scaling Mesh Generation via Compressive Tokenization
 
-### [Project Page](https://whaohan.github.io/bpt)  | [Paper](https://arxiv.org/abs/2411.07025) | [Weight](https://huggingface.co/whaohan/bpt)
+### [Project Page](https://whaohan.github.io/bpt)  | [Paper](https://arxiv.org/abs/2411.07025) | [Weight](https://huggingface.co/whaohan/bpt/tree/main)
 
 
 ## 📑 Open-source Plan
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 
 #### Download Pretrained Models
 
-The models are available at [huggingface](https://huggingface.co/whaohan/bpt). 
+The models are available at [huggingface](https://huggingface.co/whaohan/bpt/tree/main). 
 Currently, we resealse a lite version of model with the point-encoder finetuned from [Michelangelo](https://github.com/NeuralCarver/Michelangelo).
 
 To download the model, first install the huggingface-cli. (Detailed instructions are available [here](https://huggingface.co/docs/huggingface_hub/guides/cli).)
