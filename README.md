@@ -1,6 +1,6 @@
 # Scaling Mesh Generation via Compressive Tokenization
 
-### [Project Page]()  | [Paper]() | [Weight]()
+### [Project Page](https://whaohan.github.io/bpt)  | [Paper](https://arxiv.org/abs/2411.07025) | [Weight](https://huggingface.co/whaohan/bpt)
 
 
 ## 📑 Open-source Plan
@@ -50,7 +50,7 @@ pip install -r requirements.txt
 
 #### Download Pretrained Models
 
-The models are available at [huggingface](). 
+The models are available at [huggingface](https://huggingface.co/whaohan/bpt). 
 Currently, we resealse a lite version of model with the point-encoder finetuned from [Michelangelo](https://github.com/NeuralCarver/Michelangelo).
 
 To download the model, first install the huggingface-cli. (Detailed instructions are available [here](https://huggingface.co/docs/huggingface_hub/guides/cli).)
@@ -98,9 +98,14 @@ python metrics.py \
 - [MeshXL](https://github.com/OpenMeshLab/MeshXL/)
 
 
-<!-- ## Citation
+## Citation
 
 If you found this repository helpful, please cite our report:
 ```bibtex
-
-``` -->
+@article{weng2024scaling,
+  title={Scaling Mesh Generation via Compressive Tokenization}, 
+  author={Haohan Weng and Zibo Zhao and Biwen Lei and Xianghui Yang and Jian Liu and Zeqiang Lai and Zhuo Chen and Yuhong Liu and Jie Jiang and Chunchao Guo and Tong Zhang and Shenghua Gao and C. L. Philip Chen},
+  journal={arXiv preprint arXiv:2411.07025},
+  year={2024}
+}
+```
