@@ -48,7 +48,7 @@ class MeshTransformer(Module):
         *,
         dim: Union[int, Tuple[int, int]] = 512,  # hidden size of Transformer
         max_seq_len = 9600,                      # max sequence length
-        flash_attn = True,                       # wether to use flash attention
+        flash_attn = True,                       # whether to use flash attention
         attn_depth = 12,                         # number of layers
         attn_dim_head = 64,                      # dim for each head
         attn_heads = 16,                         # number of heads
